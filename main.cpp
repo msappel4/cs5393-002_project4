@@ -1,4 +1,14 @@
 #include <iostream>
+#include "SearchEngine.h" //include the search engine
+#include "UserInterface.h"
+using namespace std;
+
+int main()
+
+
+
+
+#include <iostream>
 #include <string>
 #include <vector>
 #include "DocumentParser.h"  // Include your DocumentParser class

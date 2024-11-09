@@ -1,3 +1,7 @@
+#include "QueryProcessor.h"
+
+
+
 #include <iostream>
 #include <sstream>
 #include <vector>
