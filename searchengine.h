@@ -1,13 +1,25 @@
 #ifndef SEARCH_ENGINE_H
 #define SEARCH_ENGINE_H
 
-// Including necessary header files
-#include "IndexHandler.h"   // Include the IndexHandler header for managing the index of documents
-#include "DocumentParser.h" // Include the DocumentParser header for parsing and processing documents
-#include "UserInterface.h"  // Include the UserInterface header for handling user interactions
-#include "QueryProcessor.h" // Include the QueryProcessor header for processing search queries
+#include "IndexHandler.h"   
+#include "DocumentParser.h" 
+#include "UserInterface.h"  
+#include "QueryProcessor.h"
 
-// Class definition for SearchEngine
+//Class definition
 class SearchEngine
 {
 private:
+    //Private variables
+    IndexHandler ih;   
+    DocumentParser dp; 
+    UserInterface ui;  
+    QueryProcessor qp;
+
+public:
+    //Public function
+
+    //Function to handle input arguments and initialize
+    void input(int, char **); //Needs command line arguments
+};
+#endif
