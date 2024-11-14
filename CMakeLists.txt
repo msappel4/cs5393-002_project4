@@ -50,10 +50,10 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 add_compile_options(-Wall -Wextra -pedantic)
 
 # Create the rapidJSONExample executable
-add_executable(rapidJSONExample rapidJSONExample.cpp)
+add_executable(rapidJSONex rapidJSONex.cpp)
 
 # Create the supersearch executable with all necessary source files
-add_executable(supersearch main.cpp UserInterface.cpp DocumentParser.cpp QueryProcessor.cpp IndexHandler.cpp SearchEngine.cpp porter2_stemmer.cpp)
+add_executable(supersearch main.cpp userinterface.cpp documentparser.cpp queryprocessor.cpp indexhandler.cpp searchengine.cpp porterstemmer2.cpp)
 
 # If you have other dependencies like headers, libraries, etc., link them here
 # For example: target_link_libraries(supersearch some_library)
@@ -65,19 +65,17 @@ add_executable(supersearch main.cpp UserInterface.cpp DocumentParser.cpp QueryPr
 include(CTest)
 
 # Define tests - Ensure test source files are correctly listed
-add_executable(test_DSAvlTree test_DSAvlTree.cpp)
-add_test(NAME TestAvlTree COMMAND test_DSAvlTree)
+add_executable(dsavltreetest dsavltreetest.cpp)
+add_test(NAME dsavltreetest COMMAND dsavltreetest)
 
-add_executable(test_IndexHandler test_IndexHandler.cpp IndexHandler.cpp porter2_stemmer.cpp DocumentParser.cpp)
-add_test(NAME TestIndexHandler COMMAND test_IndexHandler)
+add_executable(indexhandlertest indexhandlertest.cpp indexhandler.cpp porterstemmer2.cpp documentparser.cpp)
+add_test(NAME indexhandlertest COMMAND indexhandlertest)
 
-add_executable(test_DSHash test_DSHash.cpp)
-add_test(NAME TestHash COMMAND test_DSHash)
+add_executable(dshashtest dshashtest.cpp)
+add_test(NAME dshashtest COMMAND dshashtest)
 
-add_executable(testDocumentParser testDocumentParser.cpp DocumentParser.cpp porter2_stemmer.cpp IndexHandler.cpp)
-add_test(NAME testDocumentParser COMMAND testDocumentParser)
+add_executable(documentparsertest documentparsertest.cpp documentparser.cpp porterstemmer2.cpp indexhandler.cpp)
+add_test(NAME documentparsertest COMMAND documentparsertest)
 
-add_executable(test_QueryProcessor test_QueryProcessor.cpp QueryProcessor.cpp IndexHandler.cpp porter2_stemmer.cpp DocumentParser.cpp)
-add_test(NAME TestQueryProcessor COMMAND test_QueryProcessor)
-
-# Add more tests as needed
+add_executable(queryprocessortest queryprocessortest.cpp queryprocessor.cpp indexhandler.cpp porterstemmer2.cpp documentparser.cpp)
+add_test(NAME queryprocessortest COMMAND queryprocessortest)

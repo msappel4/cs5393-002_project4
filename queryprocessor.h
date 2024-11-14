@@ -7,8 +7,8 @@
 #include <string>
 #include <math.h>
 #include <sstream>
-#include "IndexHandler.h"
-#include "porter2_stemmer.h"
+#include "indexhandler.h"
+#include "porterstemmer2.h"
 
 //Class definition
 class QueryProcessor

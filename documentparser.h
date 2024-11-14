@@ -2,10 +2,10 @@
 #define DOCUMENT_PARSER_H
 
 // Including necessary header files
-#include "IndexHandler.h"             //IndexHandler header for indexing functionality
+#include "indexhandler.h"             //IndexHandler header for indexing functionality
 #include "rapidjson/istreamwrapper.h" //RapidJSON's istreamwrapper for handling JSON streams
 #include "rapidjson/document.h"       //RapidJSON's document header for parsing JSON documents
-#include "porter2_stemmer.h"          //Porter Stemmer header for word stemming functionality
+#include "porterstemmer2.h"          //Porter Stemmer header for word stemming functionality
 #include <string>                     //Library for string handling
 #include <vector>                     //Library for vector data structure
 #include <map>                        //Library for map data structure

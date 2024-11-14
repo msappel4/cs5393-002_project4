@@ -1,4 +1,4 @@
-#include "DocumentParser.h"
+#include "documentparser.h"
 using namespace rapidjson;
 using namespace std;
 
@@ -68,93 +68,263 @@ set<string> stopWords = {"able", "about", "above", "abroad", "according", "accor
                          "won't", "would", "wouldn't", "yes", "yet", "you", "you'd", "you'll", "your", "you're",
                          "yours", "yourself", "yourselves", "you've", "zero"};
 
+//IndexHandler instance for this DocumentParser
+void DocumentParser::setIndex(IndexHandler index)
+{
+    ih = index; 
+}
 
+//Returns the IndexHandler instance used by this DocumentParser
+IndexHandler DocumentParser::getIndex()
+{
+    return ih; 
+}
 
+//Prints basic information extracted from the JSON content of a document
+void DocumentParser::printInfo(const string &jsonContent)
+{
+    string title, publication, datePublished, finalInfoString;
 
-
-
-
-
-
-
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <set>
-#include <string>
-#include <json/json.h>
-#include <algorithm>
-#include "porter_stemmer.h"  // You should have a Porter stemmer implementation
-
-class DocumentParser {
-public:
-    DocumentParser() {
-        // Load stopwords
-        loadStopwords("stopwords.txt");
+    ifstream ifs(jsonContent);
+    if (!ifs.is_open())
+    {
+        cerr << "Could not open file for reading: " << jsonContent << endl;
+        return;
     }
 
-    struct Document {
-        std::string title;
-        std::string author;
-        std::string date;
-        std::string fullText;
-        std::string filename;
-    };
-
-    Document parseFile(const std::string& filepath) {
-        // Parse the JSON file
-        Json::Value root;
-        std::ifstream file(filepath, std::ifstream::binary);
-        file >> root;
-
-        Document doc;
-        doc.filename = filepath;
-        doc.title = root["title"].asString();
-        doc.author = root["author"].asString();
-        doc.date = root["date"].asString();
-        doc.fullText = root["content"].asString();
-
-        // Process the text: remove stopwords and stem
-        doc.fullText = removeStopwords(doc.fullText);
-        doc.fullText = stemText(doc.fullText);
-
-        return doc;
+    IStreamWrapper isw(ifs);
+    Document d;
+    d.ParseStream(isw);
+    if (d.HasParseError())
+    {
+        cerr << "JSON parse error: " << d.GetParseError() << endl;
+        return;
     }
 
-private:
-    std::set<std::string> stopwords;
+    if (d.HasMember("title") && d["title"].IsString())
+    {
+        title = d["title"].GetString();
+    }
 
-    void loadStopwords(const std::string& stopwordFile) {
-        std::ifstream file(stopwordFile);
-        std::string word;
-        while (file >> word) {
-            stopwords.insert(word);
+    if (d.HasMember("thread") && d["thread"].IsObject())
+    {
+        if (d["thread"].HasMember("site") && d["thread"]["site"].IsString())
+        {
+            publication = d["thread"]["site"].GetString();
         }
     }
+    
+    if (d.HasMember("published") && d["published"].IsString())
+    {
+        datePublished = d["published"].GetString();
+        datePublished = datePublished.substr(0, 10); 
+    }
 
-    std::string removeStopwords(const std::string& text) {
-        std::istringstream stream(text);
-        std::ostringstream result;
-        std::string word;
-        
-        while (stream >> word) {
-            if (stopwords.find(word) == stopwords.end()) {
-                result << word << " ";
+    finalInfoString = "Title: " + title + ", Publication: " + publication + ", Date Published: " + datePublished;
+    cout << finalInfoString << endl;
+}
+
+//Parses a document from its JSON content and indexes its data
+void DocumentParser::parseDocument(const string &jsonContent)
+{
+    int wordCount = 0;
+    string docPersons, org, title;
+
+    ifstream ifs(jsonContent);
+    if (!ifs.is_open())
+    {
+        cerr << "Could not open file for reading: " << jsonContent << endl;
+        return;
+    }
+
+    IStreamWrapper isw(ifs);
+    Document d;
+    d.ParseStream(isw);
+    if (d.HasParseError())
+    {
+        cerr << "JSON parse error: " << d.GetParseError() << endl;
+        return;
+    }
+
+    if (d.HasMember("title") && d["title"].IsString())
+    {
+        title = d["title"].GetString();
+        ih.addDocument(jsonContent);
+    }
+    if (d.HasMember("entities") && d["entities"].IsObject()) 
+    {
+        const rapidjson::Value &entities = d["entities"];
+        if (entities.HasMember("persons") && entities["persons"].IsArray())
+        {
+            const rapidjson::Value &personsArray = entities["persons"];
+            for (rapidjson::SizeType i = 0; i < personsArray.Size(); i++)
+            {
+                if (personsArray[i].IsObject())
+                {
+                    const rapidjson::Value &personObject = personsArray[i];
+                    if (personObject.HasMember("name") && personObject["name"].IsString())
+                    {
+                        std::string allPeople;
+                        allPeople = personObject["name"].GetString();
+                        istringstream iss5(allPeople);
+
+                        while (iss5 >> docPersons)
+                        {
+                            ih.addPeople(docPersons, jsonContent);
+                        }
+                    }
+                }
             }
         }
-        return result.str();
     }
 
-    std::string stemText(const std::string& text) {
-        std::istringstream stream(text);
-        std::ostringstream result;
-        std::string word;
-        
-        while (stream >> word) {
-            PorterStemmer::stem(word);  // Call Porter stemmer
-            result << word << " ";
+    if (d.HasMember("entities") && d["entities"].IsObject())
+    {
+        const rapidjson::Value &entities = d["entities"];
+        if (entities.HasMember("organizations") && entities["organizations"].IsArray()) 
+        {
+            const rapidjson::Value &orgsArray = entities["organizations"];
+            for (rapidjson::SizeType i = 0; i < orgsArray.Size(); i++)
+            {
+                if (orgsArray[i].IsObject())
+                {
+                    const rapidjson::Value &orgsObject = orgsArray[i];
+                    if (orgsObject.HasMember("name") && orgsObject["name"].IsString())
+                    {
+                        std::string allOrgs;
+                        allOrgs = orgsObject["name"].GetString();
+                        istringstream iss6(allOrgs);
+
+                        while (iss6 >> org)
+                        {
+                            ih.addOrgs(org, jsonContent); 
+                        }
+                    }
+                }
+            }
         }
-        return result.str();
     }
-};
+
+    if (d.HasMember("text") && d["text"].IsString())
+    {
+        string text = d["text"].GetString();
+        istringstream iss(text);
+        string word;
+        while (iss >> word)
+        {
+            word.erase(remove_if(word.begin(), word.end(), [](char c)
+                                 { return !isalpha(c); }),
+                       word.end());
+
+            transform(word.begin(), word.end(), word.begin(), ::tolower);
+            Porter2Stemmer::trim(word);
+            Porter2Stemmer::stem(word);
+            if (stopWords.find(word) == stopWords.end())
+            {
+                ih.addWords(word, jsonContent);          
+                wordCount++;                            
+                ih.addWordCount(jsonContent, wordCount); 
+            }
+        }
+    }
+    else
+    {
+        cerr << "The JSON does not contain a 'text' attribute or it is not a string." << endl;
+    }
+    std::cout << endl;
+    std::cout << "Document ID: " << jsonContent << " Word Count: " << wordCount << endl;
+}
+
+//Traverses a directory and processes each file within it
+void DocumentParser::traverseSubdirectory(const string &directoryPath)
+{
+    DIR *dir = opendir(directoryPath.c_str()); 
+    if (dir == nullptr)
+    {
+        cerr << "Could not open directory: " << directoryPath << endl;
+        return;
+    }
+    struct dirent *entry;
+    vector<string> subdirectories;
+
+    while ((entry = readdir(dir)) != nullptr)
+    {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+        {
+            subdirectories.push_back(entry->d_name);
+        }
+    }
+ 
+    closedir(dir);
+   
+    for (const auto &subdir : subdirectories)
+    {
+        string subdirPath = directoryPath + "/" + subdir;
+        DIR *subDir = opendir(subdirPath.c_str());
+        if (subDir == nullptr)
+        {
+            cerr << "Could not open subdirectory: " << subdirPath << endl;
+            continue;
+        }
+
+        std::cout << "Contents of subdirectory: " << subdir << endl;
+       
+        while ((entry = readdir(subDir)) != nullptr)
+        {
+            string filePath = subdirPath + "/" + entry->d_name;
+            parseDocument(filePath);
+        }
+       
+        closedir(subDir);
+    }
+}
+
+//Print information from document
+void DocumentParser::printDocument(const string &jsonContent)
+{
+    int wordCount = 0;
+    string docID;
+    string docPersons;
+    string org;
+    string title;
+    ifstream ifs(jsonContent);
+    if (!ifs.is_open()) 
+    {
+        cerr << "Could not open file for reading: " << jsonContent << endl;
+        return;
+    }
+    IStreamWrapper isw(ifs);
+    Document d;
+    d.ParseStream(isw);
+    if (d.HasParseError())
+    {
+        cerr << "JSON parse error: " << d.GetParseError() << endl;
+        return;
+    }
+    if (d.HasMember("title") && d["title"].IsString()) 
+    {
+        title = d["title"].GetString();
+        std::cout << "Title: " << title << endl;
+    }
+
+    if (d.HasMember("persons") && d["persons"].IsString())
+    {
+        string allPeople = d["persons"].GetString();
+        std::cout << "Persons: " << allPeople << endl;
+    }
+    if (d.HasMember("organizations") && d["organizations"].IsString())
+    {
+        string allOrgs = d["organizations"].GetString();
+        std::cout << "Organizations: " << allOrgs << endl;
+    }
+    if (d.HasMember("text") && d["text"].IsString())
+    {
+        string text = d["text"].GetString();
+        std::cout << "Text: " << text << endl;
+    }
+    else
+    {
+        cerr << "The JSON does not contain a 'text' attribute or it is not a string." << endl;
+    }
+    std::cout << endl;
+}
