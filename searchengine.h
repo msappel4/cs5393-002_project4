@@ -1,10 +1,10 @@
 #ifndef SEARCH_ENGINE_H
 #define SEARCH_ENGINE_H
 
-#include "IndexHandler.h"   
-#include "DocumentParser.h" 
-#include "UserInterface.h"  
-#include "QueryProcessor.h"
+#include "indexhandler.h"   
+#include "documentparser.h" 
+#include "userinterface.h"  
+#include "queryprocessor.h"
 
 //Class definition
 class SearchEngine
