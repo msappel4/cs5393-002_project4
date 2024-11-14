@@ -1,27 +1,25 @@
-#ifndef USER_INTERFACE_H
-#define USER_INTERFACE_H
+#ifndef SEARCH_ENGINE_H
+#define SEARCH_ENGINE_H
 
-#include <iostream>        
-#include <cstdio>          
-#include <chrono>          
-#include "queryprocessor.h" 
-#include "indexhandler.h"  
+#include "indexhandler.h"   
 #include "documentparser.h" 
+#include "userinterface.h"  
+#include "queryprocessor.h"
 
 //Class definition
-class UserInterface
+class SearchEngine
 {
 private:
     //Private variables
-    std::chrono::duration<double> elapsedTrain; 
-    IndexHandler ih;                           
-    QueryProcessor qp;                         
-    DocumentParser dp;                          
+    IndexHandler ih;   
+    DocumentParser dp; 
+    UserInterface ui;  
+    QueryProcessor qp;
 
 public:
     //Public function
 
-    //Function to initiate and handle user interaction
-    void initialQuestion(); 
+    //Function to handle input arguments and initialize
+    void input(int, char **); //Needs command line arguments
 };
 #endif

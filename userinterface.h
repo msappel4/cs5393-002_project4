@@ -4,9 +4,9 @@
 #include <iostream>        
 #include <cstdio>          
 #include <chrono>          
-#include "QueryProcessor.h" 
-#include "IndexHandler.h"  
-#include "DocumentParser.h" 
+#include "queryprocessor.h" 
+#include "indexhandler.h"  
+#include "documentparser.h" 
 
 //Class definition
 class UserInterface

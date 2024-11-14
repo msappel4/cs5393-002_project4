@@ -3,10 +3,10 @@
 
 #include "hash.h"     
 #include "dsavltree.h" 
-#include <algorithm>   //Library for various algorithms
-#include <string>      //Library for string handling
-#include <map>         //Library for map data structure
-#include <vector>      //Library for vector data structure
+#include <algorithm>   
+#include <string>      
+#include <map>         
+#include <vector>      
 
 //Class definition
 class IndexHandler

@@ -1,83 +1,130 @@
-#include "QueryProcessor.h"
+#include "queryprocessor.h"
 
+//Sets the IndexHandler object for the QueryProcessor
+void QueryProcessor::setIndexHandler(IndexHandler i)
+{
+    indexObject = i; 
+}
 
+//Parses the query answer and processes it
+std::map<std::string, int> QueryProcessor::parsingAnswer(std::string answer) 
+{
+    storage.clear(); 
+    std::string temp;
+    std::stringstream ss(answer);
+    while (getline(ss, temp, ' '))
+    {
+        storage.push_back(temp);
+    }
+    return disectAnswer();
+}
 
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <regex>
-
-class QueryProcessor {
-public:
-    QueryProcessor(IndexHandler& termIndex, IndexHandler& orgIndex, IndexHandler& personIndex)
-        : termIndex(termIndex), orgIndex(orgIndex), personIndex(personIndex) {}
-
-    void processQuery(const std::string& query) {
-        std::vector<std::string> terms;
-        std::vector<std::string> orgTerms;
-        std::vector<std::string> personTerms;
-        
-        // Tokenize the query
-        std::istringstream stream(query);
-        std::string token;
-        while (stream >> token) {
-            if (token.find("ORG:") == 0) {
-                orgTerms.push_back(token.substr(4));  // Remove "ORG:" prefix
-            } else if (token.find("PERSON:") == 0) {
-                personTerms.push_back(token.substr(7));  // Remove "PERSON:" prefix
-            } else {
-                terms.push_back(token);
+//Dissects the query, processes different search terms and computes the relevant documents
+std::map<std::string, int> QueryProcessor::disectAnswer()
+{
+    for (size_t i = 0; i < storage.size(); i++)
+    {
+        if (storage[i].length() > 4 && storage[i].substr(0, 4) == "ORG:")
+        {
+            std::string term = storage[i].substr(4, storage[i].length() - 4);
+            std::map<std::string, int> docs = indexObject.getOrgs(term);
+            relDocs = intersection(relevantDocuments, docs);
+        }
+        else if (storage[i].length() > 7 && storage[i].substr(0, 7) == "PERSON:")
+        {
+            std::string term = storage[i].substr(7, storage[i].length() - 7);
+            std::map<std::string, int> docs = indexObject.getPeople(term);
+            relDocs = intersection(relevantDocuments, docs);
+        }
+        else if (storage[i].substr(0, 1) == "-")
+        {
+            std::string term = storage[i].substr(1, storage[i].length() - 1);
+            Porter2Stemmer::trim(term);
+            Porter2Stemmer::stem(term);
+            std::map<std::string, int> docs = indexObject.getWords(term);
+            relDocs = complement(relevantDocuments, docs);
+        }
+        else
+        {
+            std::string term = storage[i];
+            Porter2Stemmer::trim(term);
+            Porter2Stemmer::stem(term);
+            if (i == 0)
+            {
+                relevantDocuments = indexObject.getWords(term);
+                sendTo = relevantDocuments;
+            }
+            else
+            {
+                std::map<std::string, int> docs = indexObject.getWords(term);
+                relDocs = intersection(relevantDocuments, docs);
             }
         }
-
-        // Search for terms in the appropriate indices
-        std::vector<std::string> resultDocs = searchTerms(terms);
-
-        // Filter by ORG and PERSON (if specified)
-        resultDocs = filterByEntities(resultDocs, orgTerms, orgIndex);
-        resultDocs = filterByEntities(resultDocs, personTerms, personIndex);
-
-        // Output the results
-        displayResults(resultDocs);
     }
+    Relevancy(sendTo);
+    return relDocs;
+}
 
-private:
-    IndexHandler& termIndex;
-    IndexHandler& orgIndex;
-    IndexHandler& personIndex;
+//Computes the intersection of two document maps
+std::map<std::string, int> QueryProcessor::intersection(std::map<std::string, int> relevantDocuments, std::map<std::string, int> docs) 
+{
+    std::map<std::string, int> finalVector;
+    for (const auto &itr : relevantDocuments)
+    {
+        if (docs.find(itr.first) != docs.end())
+        {
+            finalVector.emplace(itr.first, itr.second);
+        }
+    }
+    sendTo = finalVector;
+    return finalVector;
+}
 
-    std::vector<std::string> searchTerms(const std::vector<std::string>& terms) {
-        std::vector<std::string> docs;
-        for (const std::string& term : terms) {
-            std::vector<std::string> termDocs = termIndex.searchTerm(term);
-            if (docs.empty()) {
-                docs = termDocs;
-            } else {
-                std::vector<std::string> intersectedDocs;
-                std::set_intersection(docs.begin(), docs.end(), termDocs.begin(), termDocs.end(), std::back_inserter(intersectedDocs));
-                docs = intersectedDocs;
+//Computes the complement of two document maps
+std::map<std::string, int> QueryProcessor::complement(std::map<std::string, int> relevantDocuments, std::map<std::string, int> docs) 
+{
+    std::map<std::string, int> finalVector;
+    for (const auto &itr : relevantDocuments)
+    {
+        if (docs.find(itr.first) == docs.end())
+        {
+            finalVector[itr.first] = itr.second;
+        }
+    }
+    sendTo = finalVector;
+    return finalVector;
+}
+
+//Calculate the relevancy of documents 
+std::vector<std::string> QueryProcessor::Relevancy(std::map<std::string, int> sendTo)
+{
+    for (auto &itr : sendTo)
+    {
+        double wordCount = indexObject.getWordCount(itr.first);
+        double tf = (double)(itr.second / wordCount);
+        double idf = log2((double)(indexObject.getDocSize() / sendTo.size()));
+        itr.second = tf * idf;
+    }
+    if (sendTo.size() <= 15)
+    {
+        for (const auto &itr : sendTo)
+        {
+            printVector.push_back(itr.first);
+        }
+    }
+    else
+    {
+        int index = 0;
+        for (const auto &itr : sendTo)
+        {
+            if (index < 15)
+            {
+                printVector.push_back(itr.first);
+                ++index;
             }
-        }
-        return docs;
-    }
-
-    std::vector<std::string> filterByEntities(const std::vector<std::string>& docs, const std::vector<std::string>& entities, IndexHandler& entityIndex) {
-        std::vector<std::string> filteredDocs = docs;
-        for (const std::string& entity : entities) {
-            std::vector<std::string> entityDocs = entityIndex.searchTerm(entity);
-            std::vector<std::string> intersectedDocs;
-            std::set_intersection(filteredDocs.begin(), filteredDocs.end(), entityDocs.begin(), entityDocs.end(), std::back_inserter(intersectedDocs));
-            filteredDocs = intersectedDocs;
-        }
-        return filteredDocs;
-    }
-
-    void displayResults(const std::vector<std::string>& docs) {
-        std::cout << "Found " << docs.size() << " results:" << std::endl;
-        for (const std::string& docId : docs) {
-            std::cout << docId << std::endl;
+            else
+                break;
         }
     }
-};
+    return printVector;
+}

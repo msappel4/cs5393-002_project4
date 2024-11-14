@@ -36,7 +36,7 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
-#include "porter2_stemmer.h"
+#include "porterstemmer2.h"
 
 using namespace Porter2Stemmer::internal;
 

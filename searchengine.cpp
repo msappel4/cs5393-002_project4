@@ -1,72 +1,66 @@
-#include "SearchEngine.h"
+#include "searchengine.h"
 #include <iostream>
 #include <cstdio>
 #include <chrono>
 
-
-
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <vector>
-
-class SearchEngine {
-public:
-    SearchEngine(const std::string& dataDir) 
-        : docParser(), termIndex(), orgIndex(), personIndex() {
-        this->dataDir = dataDir;
+//Process input commands for the search engine
+void SearchEngine::input(int num, char **answer)
+{
+  //Check if the command is to create an index
+  if (strcmp(answer[1], "index") == 0)
+  {
+    std::cout << "Reading files..." << std::endl;
+    dp.traverseSubdirectory(answer[2]); 
+    ih = dp.getIndex();               
+    std::cout << "Done!" << std::endl;
+    std::cout << "Creating persistence, this may take a minute..." << std::endl;
+    ih.createPersistence(); 
+    std::cout << "Persistence has been created!" << std::endl;
+  }
+  //Check if the command is to process a query
+  else if (strcmp(answer[1], "query") == 0)
+  {
+    std::cout << "Reading persistence..." << std::endl;
+    ih.readPersistence(); 
+    std::cout << "Persistence has been read!" << std::endl;
+    dp.setIndex(ih);        
+    qp.setIndexHandler(ih); 
+    std::string answer2 = answer[2];
+    for (int i = 3; i < num; i++)
+    {
+      answer2 = answer2 + " " + answer[i];
     }
-
-    void indexDocuments() {
-        // Process all files in the directory
-        for (const std::string& filename : getFilesInDirectory(dataDir)) {
-            DocumentParser::Document doc = docParser.parseFile(filename);
-            indexDocument(doc);
-        }
-
-        // Save the indices
-        termIndex.saveIndex("term_index.txt");
-        orgIndex.saveIndex("org_index.txt");
-        personIndex.saveIndex("person_index.txt");
-
-        std::cout << "Indexing complete!" << std::endl;
+    std::map<std::string, int> relevantDocs = qp.parsingAnswer(answer2);
+    int count = 1;
+    std::cout << "Here are the most relevant documents" << std::endl;
+    for (const auto &item : qp.getPrintVector())
+    {
+      std::cout << count << ". ";
+      dp.printInfo(item); 
+      std::cout << std::endl;
+      ++count;
     }
-
-    void loadIndex() {
-        termIndex.loadIndex("term_index.txt");
-        orgIndex.loadIndex("org_index.txt");
-        personIndex.loadIndex("person_index.txt");
-
-        std::cout << "Index loaded!" << std::endl;
+    std::string yesOrNo;
+    std::cout << "Would you like to see the contents of a file listed above?" << std::endl;
+    std::getline(std::cin, yesOrNo);
+    for (size_t i = 0; i < yesOrNo.length(); i++)
+    {
+      tolower(yesOrNo.at(i)); 
     }
-
-    void search(const std::string& query) {
-        queryProcessor.processQuery(query);
+    if (yesOrNo == "yes")
+    {
+      std::cout << "Please enter in the number of the corresponding document that you would like to see." << std::endl;
+      std::string number;
+      std::getline(std::cin, number);         
+      int num = stoi(number);                 
+      dp.printDocument(qp.getPrint(num - 1)); 
     }
-
-private:
-    DocumentParser docParser;
-    IndexHandler termIndex;
-    IndexHandler orgIndex;
-    IndexHandler personIndex;
-    QueryProcessor queryProcessor;
-    std::string dataDir;
-
-    std::vector<std::string> getFilesInDirectory(const std::string& dir) {
-        // This is just a placeholder. Implement directory listing based on your platform.
-        return { "sample_file_1.json", "sample_file_2.json" }; // Example files
-    }
-
-    void indexDocument(const DocumentParser::Document& doc) {
-        // Index terms
-        std::istringstream stream(doc.fullText);
-        std::string word;
-        while (stream >> word) {
-            termIndex.addTerm(word, doc.filename);
-        }
-
-        // Index organizations and persons (Assume we extract these entities)
-        orgIndex.addTerm("Facebook", doc.filename);
-        personIndex.addTerm("Mark Zuckerberg", doc.filename);
-    }
-};
+    qp.clearPrintVector(); 
+  }
+  //Check if the command is to interact through the user interface
+  else if (strcmp(answer[1], "ui") == 0)
+  {
+    ih.readPersistence(); 
+    ui.initialQuestion(); 
+  }
+}
