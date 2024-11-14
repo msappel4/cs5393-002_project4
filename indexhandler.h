@@ -1,8 +1,8 @@
 #ifndef INDEX_HANDLER_H
 #define INDEX_HANDLER_H
 
-#include "Hash.h"     
-#include "DSAvlTree.h" 
+#include "hash.h"     
+#include "dsavltree.h" 
 #include <algorithm>   //Library for various algorithms
 #include <string>      //Library for string handling
 #include <map>         //Library for map data structure
