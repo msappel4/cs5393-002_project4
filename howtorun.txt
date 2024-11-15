@@ -7,5 +7,5 @@ Type cmake .., enter
 Type make, enter
 Type ctest, enter 
     (to test all classes)
-Type ./supersearch
+Type ./supersearch, enter
     (to run search engine)
